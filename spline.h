@@ -4,8 +4,8 @@
 
 /*
  ** see (A1) and (A2) of TREESPH: A UNIFICATION OF SPH WITH THE 
- ** HIERARCHICAL TREE METHOD by Lars HernqSPLINE_uist and Neal Katz.
- ** APJ SSPLINE_upplemant Series 70:416-446, 1989
+ ** HIERARCHICAL TREE METHOD by Lars Hernquist and Neal Katz.
+ ** APJ Supplemant Series 70:416-446, 1989
  ** 
  */
 #define SPLINE(r2,twoh,a,b)\
