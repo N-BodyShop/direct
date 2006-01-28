@@ -71,7 +71,7 @@ struct chkptHeader {
 
 void kdTime(KD,int *,int *);
 int kdInit(KD *,double,float *,float *,int,char *);
-int kdReadTipsy(KD,FILE *,int,int,int);
+int kdReadTipsy(KD,FILE *,int,int,int,int);
 void kdSetSoft(KD,float);
 void kdInMark(KD,char *);
 void kdMarkOrder(KD);

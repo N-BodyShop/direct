@@ -4,12 +4,26 @@
 #include <math.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <rpc/xdr.h>
 #include <assert.h>
 #include "kd.h"
 #include "grav.h"
 #include "ewald.h"
 #include "tipsydefs.h"
 
+int xdrHeader(XDR *pxdrs,struct dump *ph)
+{
+	int pad = 0;
+	
+	if (!xdr_double(pxdrs,&ph->time)) return 0;
+	if (!xdr_int(pxdrs,&ph->nbodies)) return 0;
+	if (!xdr_int(pxdrs,&ph->ndim)) return 0;
+	if (!xdr_int(pxdrs,&ph->nsph)) return 0;
+	if (!xdr_int(pxdrs,&ph->ndark)) return 0;
+	if (!xdr_int(pxdrs,&ph->nstar)) return 0;
+	if (!xdr_int(pxdrs,&pad)) return 0;
+	return 1;
+	}
 
 void kdTime(KD kd,int *puSecond,int *puMicro)
 {
@@ -57,15 +71,29 @@ void kdFinish(KD kd)
 	}
 
 
-int kdReadTipsy(KD kd,FILE *fp,int bGas,int bDark,int bStar)
+int kdReadTipsy(KD kd,FILE *fp,int bGas,int bDark,int bStar, int bStandard)
 {
 	int i,j,nCnt;
 	struct dump h;
 	struct gas_particle gp;
 	struct dark_particle dp;
 	struct star_particle sp;
+	XDR xdrs;
 
-	fread(&h,sizeof(struct dump),1,fp);
+	if (bStandard) {
+	    assert(sizeof(Real)==sizeof(float)); /* Otherwise, this XDR stuff
+						    ain't gonna work */
+	    xdrstdio_create(&xdrs, fp, XDR_DECODE);
+	    xdrHeader(&xdrs,&h);
+	    }
+	else {
+	    fread(&h,sizeof(struct dump),1,fp);
+	    }
+	assert(h.nbodies >= 0);
+	assert(h.nsph >= 0);
+	assert(h.ndark >= 0);
+	assert(h.nstar >= 0);
+	
 	kd->nParticles = h.nbodies;
 	kd->nDark = h.ndark;
 	kd->nGas = h.nsph;
@@ -89,7 +117,13 @@ int kdReadTipsy(KD kd,FILE *fp,int bGas,int bDark,int bStar)
 	 */
 	nCnt = 0;
 	for (i=0;i<h.nsph;++i) {
-		fread(&gp,sizeof(struct gas_particle),1,fp);
+		if (bStandard) {
+			xdr_vector(&xdrs, (char *) &gp, 12,
+				   sizeof(Real), (xdrproc_t) xdr_float);
+			}
+		else {
+			fread(&gp,sizeof(struct gas_particle),1,fp);
+		    }
 		if (bGas) {
 			kd->p[nCnt].fMass = gp.mass;
 			kd->p[nCnt].fSoft = gp.hsmooth;
@@ -100,7 +134,13 @@ int kdReadTipsy(KD kd,FILE *fp,int bGas,int bDark,int bStar)
 			}
 		}
 	for (i=0;i<h.ndark;++i) {
-		fread(&dp,sizeof(struct dark_particle),1,fp);
+		if (bStandard) {
+		    xdr_vector(&xdrs, (char *) &dp, 9,
+			       sizeof(Real), (xdrproc_t) xdr_float);
+		    }
+		else {
+		    fread(&dp,sizeof(struct dark_particle),1,fp);
+		    }
 		if (bDark) {
 			kd->p[nCnt].fMass = dp.mass;
 			kd->p[nCnt].fSoft = dp.eps;
@@ -111,7 +151,13 @@ int kdReadTipsy(KD kd,FILE *fp,int bGas,int bDark,int bStar)
 			}
 		}
 	for (i=0;i<h.nstar;++i) {
-		fread(&sp,sizeof(struct star_particle),1,fp);
+		if (bStandard) {
+		    xdr_vector(&xdrs, (char *) &sp, 11,
+			       sizeof(Real), (xdrproc_t) xdr_float);
+		    }
+		else {
+		    fread(&sp,sizeof(struct star_particle),1,fp);
+		    }
 		if (bStar) {
 			kd->p[nCnt].fMass = sp.mass;
 			kd->p[nCnt].fSoft = sp.eps;
@@ -121,6 +167,7 @@ int kdReadTipsy(KD kd,FILE *fp,int bGas,int bDark,int bStar)
 			++nCnt;
 			}
 		}
+	if (bStandard) xdr_destroy(&xdrs);
 	return(kd->nParticles);
 	}
 

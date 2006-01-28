@@ -10,7 +10,7 @@ void usage(void)
 	fprintf(stderr,"USAGE:\n");
 	fprintf(stderr,"direct [-e <fSoft>] [-uniform] [-plummer] [-spline]\n");
 	fprintf(stderr,"     [-p <xyzPeriod>] [-G <fGravConst>] [-b <iBlockSize>]\n");
-	fprintf(stderr,"     [-dgs] [-do <MarkName>] [-o <FileName>]\n");
+	fprintf(stderr,"     [-dgs] [-do <MarkName>] [-o <FileName>] [-std]\n");
 	fprintf(stderr,"     [-i <iChkptInterval>] [-restart] [-v] [-t]\n");
 	fprintf(stderr,"Reads tipsy binary format from stdin\n");
 	fprintf(stderr,"For more information see man page, direct(1)\n");
@@ -22,6 +22,7 @@ void main(int argc,char **argv)
 	KD kd;
 	int i,iBlockSize,bVerbose,bSoft,bTestGrav;
 	int bGas,bDark,bStar,iChkptInterval,bRestart;
+	int bStandard;		/* Use tipsy standard format */
 	int iSoftType,bMark;
 	int j,bPeriodic;
 	int sec,usec;
@@ -39,6 +40,7 @@ void main(int argc,char **argv)
 	bDark = 1;
 	bStar = 1;
 	bRestart = 0;
+	bStandard = 0;
 	iChkptInterval = 0;	/* No Check points default */
 	G = 1.0;
 	iBlockSize = 256;
@@ -123,6 +125,10 @@ void main(int argc,char **argv)
 			++i;
 			bRestart = 1;
 			}
+		else if (!strcmp(argv[i],"-std")) {
+		        bStandard = 1;
+			++i;
+		        }
 		else if (*argv[i] == '-') {
 			p = argv[i];
 			++p;
@@ -180,7 +186,7 @@ void main(int argc,char **argv)
 			kdFinish(kd);
 			exit(1);
 			}
-		kdReadTipsy(kd,stdin,bGas,bDark,bStar);
+		kdReadTipsy(kd,stdin,bGas,bDark,bStar,bStandard);
 		if (bSoft) kdSetSoft(kd,fSoft);
 		if (bMark) {
 			kdInMark(kd,achMark);
