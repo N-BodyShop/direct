@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <float.h>
 #include <string.h>
 #include <assert.h>
 #include "kd.h"
@@ -47,7 +48,7 @@ void main(int argc,char **argv)
 	bPeriodic = 0;
 	for (j=0;j<3;++j) {
 		fCenter[j] = 0.0;
-		fPeriod[j] = HUGE;
+		fPeriod[j] = FLT_MAX;
 		}
 	/*
 	 ** Set up driver routines for uniform-density sphere softening.
