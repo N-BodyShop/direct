@@ -1,8 +1,8 @@
 #
 # Makefile for direct.
 #
-CFLAGS	=   -O2
-LIBS	=   -lm
+CFLAGS	=   -O2 -I/usr/include/tirpc
+LIBS	=   -lm -ltirpc
 
 default:	direct
 
