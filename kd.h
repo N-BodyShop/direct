@@ -39,6 +39,7 @@ typedef struct kdContext {
 	char *pszChkptName;
 	int iSoftType;
 	int bPeriodic;
+	int bPeriodic2;
 	int iBlockSize;
 	int uSecond;
 	int uMicro;
@@ -61,6 +62,7 @@ struct chkptHeader {
 	float fCenter[3];
 	int iSoftType;
 	int bPeriodic;
+	int bPeriodic2;
 	int iBlockSize;
 	int uSecond;
 	int uMicro;
@@ -76,10 +78,11 @@ void kdSetSoft(KD,float);
 void kdInMark(KD,char *);
 void kdMarkOrder(KD);
 void kdOrder(KD);
-void kdGravSimple(KD,int,int);
-void kdGrav(KD,int,int,int,int);
+void kdGravSimple(KD,int,int,int);
+void kdGrav(KD,int,int,int,int,int);
 void kdRestart(KD,int);
 void kdOutAccel(KD,char *);
+void kdOutAccel1D(KD kd,char *pszFile, int iDir);
 void kdOutPot(KD,char *);
 void kdFinish(KD);
 

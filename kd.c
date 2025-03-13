@@ -255,7 +255,7 @@ void kdOrder(KD kd)
 /*
  ** A simple driver. No support for check-pointing here!
  */
-void kdGravSimple(KD kd,int iSoftType,int bPeriodic)
+void kdGravSimple(KD kd,int iSoftType,int bPeriodic, int bPeriodic2)
 {
 	PARTICLE *p;
 	int i,n;
@@ -273,6 +273,9 @@ void kdGravSimple(KD kd,int iSoftType,int bPeriodic)
 	 */
 	if (bPeriodic) {
 		diaEwald(p,n,iSoftType,kd->fPeriod[0]);
+		}
+	else if (bPeriodic2) {
+		diaEwald2D(p,n,iSoftType,kd->fPeriod);
 		}
 	else {
 		diaGrav(p,n,iSoftType);
@@ -309,6 +312,7 @@ void WriteChkpt(KD kd,int lBlock,int kBlock)
 		}
 	h.iSoftType = kd->iSoftType;
 	h.bPeriodic = kd->bPeriodic;
+	h.bPeriodic2 = kd->bPeriodic2;
 	h.iBlockSize = kd->iBlockSize;
 	/*
 	 ** Store time used up to now.
@@ -361,6 +365,7 @@ void ReadChkpt(KD kd,int *plBlock,int *pkBlock)
 		}
 	kd->iSoftType = h.iSoftType;
 	kd->bPeriodic = h.bPeriodic;
+	kd->bPeriodic2 = h.bPeriodic2;
 	kd->iBlockSize = h.iBlockSize;
 	/*
 	 ** Fix up CPU time.
@@ -388,7 +393,7 @@ void ReadChkpt(KD kd,int *plBlock,int *pkBlock)
  ** Driver routine for direct. With support for check points!
  */
 void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
-		  int bVerbose)
+          int bPeriodic2, int bVerbose)
 {
 	PARTICLE *p,*q;
 	int k,l,n,nk,nb,nbk,bs,rs,rsk,iStride,bc,i;
@@ -403,7 +408,7 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 	nbk = nk/bs;
 	rsk = nk%bs;
 	iStride = 16384/bs;
-	if (bPeriodic) iStride = iStride/100;
+	if (bPeriodic || bPeriodic2) iStride = iStride/100;
 	if (!iStride) iStride = 1;
 	if (lBlock || kBlock) {
 		l = lBlock;
@@ -436,6 +441,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 		if (bPeriodic) {
 			diaEwald(&p[k*bs],bs,iSoftType,kd->fPeriod[0]);
 			}
+                else if (bPeriodic2) {
+                    diaEwald2D(&p[k*bs],bs,iSoftType,kd->fPeriod);
+		}
 		else {
 			diaGrav(&p[k*bs],bs,iSoftType);
 			}
@@ -446,6 +454,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 		}
 	if (bPeriodic) {
 		diaEwald(&p[k*bs],rs,iSoftType,kd->fPeriod[0]);
+		}
+	else if (bPeriodic2) {
+		diaEwald2D(&p[k*bs],rs,iSoftType,kd->fPeriod);
 		}
 	else {
 		diaGrav(&p[k*bs],rs,iSoftType);
@@ -474,6 +485,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 			if (bPeriodic) {
 				blkEwald(&p[(l-1)*bs],bs,&p[k*bs],bs,iSoftType,kd->fPeriod[0]);
 				}
+			else if (bPeriodic2) {
+				blkEwald2D(&p[(l-1)*bs],bs,&p[k*bs],bs,iSoftType,kd->fPeriod);
+                        }
 			else {
 				blkGrav(&p[(l-1)*bs],bs,&p[k*bs],bs,iSoftType);
 				}
@@ -485,6 +499,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 		if (bPeriodic) {
 			blkEwald(&p[l*bs],bs,&p[nb*bs],rs,iSoftType,kd->fPeriod[0]);
 			}	
+		else if (bPeriodic2) {
+			blkEwald2D(&p[l*bs],bs,&p[nb*bs],rs,iSoftType,kd->fPeriod);
+                        }
 		else {
 			blkGrav(&p[l*bs],bs,&p[nb*bs],rs,iSoftType);
 			}
@@ -519,6 +536,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 				if (bPeriodic) {
 					umkEwald(&p[l*bs],bs,&q[k*bs],bs,iSoftType,kd->fPeriod[0]);
 					}
+				else if (bPeriodic2) {
+					umkEwald2D(&p[l*bs],bs,&q[k*bs],bs,iSoftType,kd->fPeriod);
+                                    }
 				else {
 					umkGrav(&p[l*bs],bs,&q[k*bs],bs,iSoftType);
 					}
@@ -526,6 +546,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 			if (bPeriodic) {
 				umkEwald(&p[l*bs],bs,&q[k*bs],rsk,iSoftType,kd->fPeriod[0]);
 				}
+			else if (bPeriodic2) {
+				umkEwald2D(&p[l*bs],bs,&q[k*bs],rsk,iSoftType,kd->fPeriod);
+                            }
 			else {
 				umkGrav(&p[l*bs],bs,&q[k*bs],rsk,iSoftType);
 				}
@@ -534,6 +557,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 			if (bPeriodic) {
 				umkEwald(&p[l*bs],rs,&q[k*bs],bs,iSoftType,kd->fPeriod[0]);
 				}
+			else if (bPeriodic2) {
+				umkEwald2D(&p[l*bs],rs,&q[k*bs],bs,iSoftType,kd->fPeriod);
+                            }
 			else {
 				umkGrav(&p[l*bs],rs,&q[k*bs],bs,iSoftType);
 				}
@@ -541,6 +567,9 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 		if (bPeriodic) {
 			umkEwald(&p[l*bs],rs,&q[k*bs],rsk,iSoftType,kd->fPeriod[0]);
 			}
+		else if (bPeriodic) {
+			umkEwald2D(&p[l*bs],rs,&q[k*bs],rsk,iSoftType,kd->fPeriod);
+                    }
 		else {
 			umkGrav(&p[l*bs],rs,&q[k*bs],rsk,iSoftType);
 			}
@@ -555,12 +584,14 @@ void Grav(KD kd,int lBlock,int kBlock,int iSoftType,int bPeriodic,
 
 
 void kdGrav(KD kd,int iBlockSize,int iSoftType,int bPeriodic,
+            int bPeriodic2,
 			int bVerbose)
 {
 	kd->iSoftType = iSoftType;
 	kd->bPeriodic = bPeriodic;
+	kd->bPeriodic2 = bPeriodic2;
 	kd->iBlockSize = iBlockSize;
-	Grav(kd,0,0,iSoftType,bPeriodic,bVerbose);
+	Grav(kd,0,0,iSoftType,bPeriodic,bPeriodic2, bVerbose);
 	}
 
 
@@ -569,7 +600,7 @@ void kdRestart(KD kd,int bVerbose)
 	int l,k;
 
 	ReadChkpt(kd,&l,&k);
-	Grav(kd,l,k,kd->iSoftType,kd->bPeriodic,bVerbose);
+	Grav(kd,l,k,kd->iSoftType,kd->bPeriodic,kd->bPeriodic2,bVerbose);
 	}
 
 
@@ -623,6 +654,29 @@ void kdOutAccel(KD kd,char *pszFile)
 	fclose(fp);
 	}
 
+void kdOutAccel1D(KD kd,char *pszFile, int iDir)
+{
+	FILE *fp;
+	int i,iCnt;
+
+	fp = fopen(pszFile,"w");
+	assert(fp != NULL);
+	fprintf(fp,"%d\n",kd->nParticles);
+	iCnt = 0;
+	for (i=0;i<kd->nGas;++i) {
+		if (kd->bGas) fprintf(fp,"%.17g\n",kd->p[iCnt++].a[iDir]);
+		else fprintf(fp,"0\n");
+		}
+	for (i=0;i<kd->nDark;++i) {
+		if (kd->bDark) fprintf(fp,"%.17g\n",kd->p[iCnt++].a[iDir]);
+		else fprintf(fp,"0\n");
+		}
+	for (i=0;i<kd->nStar;++i) {
+		if (kd->bStar) fprintf(fp,"%.17g\n",kd->p[iCnt++].a[iDir]);
+		else fprintf(fp,"0\n");
+		}
+	fclose(fp);
+	}
 
 void kdOutPot(KD kd,char *pszFile)
 {

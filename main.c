@@ -12,6 +12,7 @@ void usage(void)
 	fprintf(stderr,"USAGE:\n");
 	fprintf(stderr,"direct [-e <fSoft>] [-uniform] [-plummer] [-spline]\n");
 	fprintf(stderr,"     [-p <xyzPeriod>] [-G <fGravConst>] [-b <iBlockSize>]\n");
+        fprintf(stderr,"     [-p2 <xyPeriod> ] [-splitout] \n");
 	fprintf(stderr,"     [-dgs] [-do <MarkName>] [-o <FileName>] [-std]\n");
 	fprintf(stderr,"     [-i <iChkptInterval>] [-restart] [-v] [-t]\n");
 	fprintf(stderr,"Reads tipsy binary format from stdin\n");
@@ -19,7 +20,7 @@ void usage(void)
 	exit(1);
 	}
 
-void main(int argc,char **argv)
+int main(int argc,char **argv)
 {
 	KD kd;
 	int i,iBlockSize,bVerbose,bSoft,bTestGrav;
@@ -27,6 +28,8 @@ void main(int argc,char **argv)
 	int bStandard;		/* Use tipsy standard format */
 	int iSoftType,bMark;
 	int j,bPeriodic;
+        int bPeriodic2;         /* 2 D periodicity */
+        int bSplitOut;          /* Split accelerations into 3 files */
 	int sec,usec;
 	double G;
 	float fSoft,fPeriod[3],fCenter[3];
@@ -47,6 +50,7 @@ void main(int argc,char **argv)
 	G = 1.0;
 	iBlockSize = 256;
 	bPeriodic = 0;
+	bPeriodic2 = 0;
 	for (j=0;j<3;++j) {
 		fCenter[j] = 0.0;
 		fPeriod[j] = FLT_MAX;
@@ -104,6 +108,13 @@ void main(int argc,char **argv)
 			fPeriod[2] = atof(argv[i]);
 			++i;
 			}
+		else if (!strcmp(argv[i],"-p2")) {
+			++i;
+			bPeriodic2 = 1;
+			fPeriod[0] = atof(argv[i]);
+			fPeriod[1] = atof(argv[i]);
+			++i;
+			}
 		else if (!strcmp(argv[i],"-do")) {
 			++i;			
 			if (i >= argc) usage();
@@ -129,6 +140,10 @@ void main(int argc,char **argv)
 			}
 		else if (!strcmp(argv[i],"-std")) {
 		        bStandard = 1;
+			++i;
+		        }
+		else if (!strcmp(argv[i],"-splitout")) {
+		        bSplitOut = 1;
 			++i;
 		        }
 		else if (*argv[i] == '-') {
@@ -160,6 +175,7 @@ void main(int argc,char **argv)
 			}
 		else usage();
 		}
+        assert(!bPeriodic || !bPeriodic2);
 	if (bVerbose) {
 		printf("DIRECT v1.2: Joachim Stadel, Jan 1995\n");
 		fflush(stdout);
@@ -196,11 +212,11 @@ void main(int argc,char **argv)
 			}
 		kdTime(kd,&sec,&usec);
 		if (bTestGrav) {
-			kdGravSimple(kd,iSoftType,bPeriodic);
-			}
+                    kdGravSimple(kd,iSoftType,bPeriodic,bPeriodic2);
+                    }
 		else {
-			kdGrav(kd,iBlockSize,iSoftType,bPeriodic,bVerbose);
-			}
+                    kdGrav(kd,iBlockSize,iSoftType,bPeriodic,bPeriodic2,bVerbose);
+                    }
 		}
 	if (bVerbose) {
 		kdTime(kd,&sec,&usec);
@@ -208,9 +224,22 @@ void main(int argc,char **argv)
 		fflush(stdout);
 		}
 	if (bMark) kdOrder(kd);
-	strcpy(achFile,ach);
-	strcat(achFile,".acc");
-	kdOutAccel(kd,achFile);
+        if(bSplitOut) {
+            strcpy(achFile,ach);
+            strcat(achFile,".accx");
+            kdOutAccel1D(kd,achFile, 0);
+            strcpy(achFile,ach);
+            strcat(achFile,".accy");
+            kdOutAccel1D(kd,achFile, 1);
+            strcpy(achFile,ach);
+            strcat(achFile,".accz");
+            kdOutAccel1D(kd,achFile, 2);
+            }
+        else {
+            strcpy(achFile,ach);
+            strcat(achFile,".acc");
+            kdOutAccel(kd,achFile);
+            }
 	strcpy(achFile,ach);
 	strcat(achFile,".pot");
 	kdOutPot(kd,achFile);
@@ -227,7 +256,7 @@ void main(int argc,char **argv)
 			}
 		}
 	kdFinish(kd);
-	}
-	
+        return 0;
+	}	
 
 
