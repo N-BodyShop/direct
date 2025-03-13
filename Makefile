@@ -9,8 +9,8 @@ default:	direct
 clean:
 	rm -f *.o
 
-direct: main.o kd.o grav.o ewald.o
-	$(CC) $(CFLAGS) -o direct main.o kd.o grav.o ewald.o $(LIBS)
+direct: main.o kd.o grav.o ewald.o ewald2.o
+	$(CC) $(CFLAGS) -o direct main.o kd.o grav.o ewald.o ewald2.o $(LIBS)
 
 main.o: main.c kd.h
 	$(CC) $(CFLAGS) -c main.c
@@ -23,4 +23,7 @@ grav.o: grav.c grav.h kd.h spline.h
 
 ewald.o: ewald.c ewald.h kd.h spline.h 
 	$(CC) $(CFLAGS) -c ewald.c
+
+ewald2.o: ewald2.c ewald.h kd.h spline.h 
+	$(CC) $(CFLAGS) -c ewald2.c
 
